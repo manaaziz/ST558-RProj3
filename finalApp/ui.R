@@ -39,7 +39,8 @@ shinyUI(fluidPage(
                                    at the Univesity of Nevada, Las Vegas, so it was inevitable that I would grow up in
                                    and around the giant resorts. For the first project, I paid homage to my hometown
                                    by using data on the Vegas Golden Knights. For this project, I figured I would do
-                                   the same thing by using a hotels data set."),
+                                   the same thing by using a hotels data set. ", 
+                                   tags$b("The purpose of this app is to pass ST558 :)")),
                             h3("About the Data"),
                             tags$p("The data set used comes from a hotel located in Southern Portugal. The hotel is a resort 
                                     hotel located along the coast, which is a relatively popular European tourist

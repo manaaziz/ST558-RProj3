@@ -12,6 +12,12 @@ library(tidyverse)
 library(tools)
 library(caret)
 
+# Read in data and subset it
+hotel <- read_csv("H1.csv")
+covs <- names(hotel)[c(1,2,8,26,20,28,22,14,27)]
+hotel <- hotel[1:5000, covs]
+hotel$IsCanceled <- hotel$IsCanceled %>% as.factor()
+
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
