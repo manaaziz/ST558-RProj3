@@ -7,10 +7,19 @@
 #    http://shiny.rstudio.com/
 #
 
+# Load necessary libraries
 library(shiny)
 library(tidyverse)
 library(tools)
 library(caret)
+library(plotly)
+library(DT)
+
+# Read in data and subset it
+hotel <- read_csv("../H1.csv")
+covs <- names(hotel)[c(1,2,8,26,20,28,22,14,27)]
+hotel <- hotel[1:5000, covs]
+hotel$IsCanceled <- hotel$IsCanceled %>% as.factor()
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -21,7 +30,7 @@ shinyUI(fluidPage(
                          h2("ST558 Final Project"),
                          h3("By: Mana Azizsoltani"),
                          br(),
-                         h4("Links"),
+                         h4("External Links"),
                          tags$div(
                              tags$ul(
                                  tags$li(a(href = "https://github.com/manaaziz/ST558-RProj3", "REPOSITORY")),
@@ -67,9 +76,57 @@ shinyUI(fluidPage(
         ), 
         tabPanel("Exploration", fluid = TRUE,
                  sidebarLayout(
-                     sidebarPanel(sliderInput("year", "Year:", min = 1968, max = 2009, value = 2009, sep='')),
-                     mainPanel( )
-                 )
+                     sidebarPanel(
+                         h1("Data Exploration"),
+                         br(),
+                         h3("Graphical Summaries"),
+                         radioButtons(inputId = "plottype", label = "Plot Type",
+                                      choiceValues = c("hist", "bar", "scat"),
+                                      choiceNames = c("Histogram", "Bar Plot", "Scatter Plot")
+                         ),
+                                      conditionalPanel("input.plottype == 'hist'",
+                                                       selectInput(inputId = "histvar", 
+                                                                   label = "Variable for Histogram", 
+                                                                   choices = c("Average Daily Rate" = "adr",
+                                                                               "Days between booking and stay" = "leadtime",
+                                                                               "# of weekday stays" = "weekstays")),
+                                                       sliderInput("bins", "Number of Bins", 
+                                                                   min = 20, max = 150, value = 30),
+                                                       numericInput("maxBins", label = "Set Maximum Number of Bins",
+                                                                    value = 100, min = 50, max = 150)
+                                      ),
+                                      conditionalPanel("input.plottype == 'bar'",
+                                                      selectInput(inputId = "barvar", 
+                                                                  label = "Variable for Bar Plot", 
+                                                                  choices = c("Assigned Room Type" = "rmtype",
+                                                                              "Customer Type" = "custtype", 
+                                                                              "Market Segment" = "mrkt")),
+                                                      checkboxInput(inputId = "barcolor", 
+                                                                    label = "Group by Cancellations?")
+                                      ),
+                                      conditionalPanel("input.plottype == 'scat'",
+                                                       checkboxInput(inputId = "scatcolor", 
+                                                                     label = "Color by Cancellations?")
+                                      ),
+                         br(),
+                         h4("*Numerical summaries automatically generated for selected variable(s)"),
+                         br(),
+                         h4("Data Set"),
+                         checkboxGroupInput(inputId = "xplrSub", label = "Choose Variables to See",
+                                            choices = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
+                                                        "CustomerType", "AssignedRoomType",        
+                                                        "MarketSegment", "ADR"))
+                         
+                    ),
+                    mainPanel(h1("Graphical Summary"),
+                              plotlyOutput("explorePlot"),
+                              br(),
+                              h1("Numerical Summaries"),
+                              dataTableOutput("exploreSummary"),
+                              h1("Data Set")
+                    )          
+                )
+                    
         ),
         tabPanel("PCA", fluid = TRUE,
                  sidebarLayout(
