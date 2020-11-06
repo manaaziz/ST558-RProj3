@@ -1,12 +1,3 @@
-#
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
-
 # Load necessary libraries
 library(shiny)
 library(shinyjs)
@@ -15,6 +6,11 @@ library(tools)
 library(caret)
 library(plotly)
 library(DT)
+library(ggfortify)
+library(MASS)
+library(rpart.plot)
+library(rpart)
+library(class)
 
 # Read in data and subset it
 hotel <- read_csv("../H1.csv")
@@ -23,7 +19,7 @@ hotel <- hotel[1:5000, covs]
 hotel$IsCanceled <- hotel$IsCanceled %>% as.factor()
 
 # Define UI for application that draws a histogram
-shinyUI(fluidPage(useShinyjs(),
+shinyUI(fluidPage(useShinyjs(), withMathJax(),
     tabsetPanel(
         tabPanel("Information", fluid = TRUE,
                  sidebarLayout(
@@ -39,11 +35,11 @@ shinyUI(fluidPage(useShinyjs(),
                                  tags$li(a(href = "https://www.linkedin.com/in/manaazizsoltani/", "LINKEDIN"))
                              )
                          ),
-                         actionButton(inputId = "posty", label = "PRESS HERE"),
+                         actionButton(inputId = "posty", label = "The 'Post' Button"),
                          hidden(div(id='funtext', htmlOutput("postText")))
                      ),
                      mainPanel(
-                         h1("Welcome to my app!"),
+                         h2("Welcome to my app!"),
                          br(),
                          tags$div(
                             h3("Introduction"),
@@ -80,7 +76,7 @@ shinyUI(fluidPage(useShinyjs(),
         tabPanel("Exploration", fluid = TRUE,
                  sidebarLayout(
                      sidebarPanel(
-                         h1("Data Exploration"),
+                         h2("Data Exploration"),
                          br(),
                          h3("Graphical Summaries"),
                          radioButtons(inputId = "plottype", label = "Plot Type",
@@ -123,25 +119,29 @@ shinyUI(fluidPage(useShinyjs(),
                                      conditionalPanel("input.exploreFunc == 'dat'",
                                                       checkboxGroupInput(inputId = "xplrSub", label = "Choose Variables to See",
                                                                          selected = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
-                                                                                      "CustomerType", "AssignedRoomType",        
+                                                                                      "DepositType", "CustomerType", "AssignedRoomType",
+                                                                                      "RequiredCarParkingSpaces",        
                                                                                       "MarketSegment", "ADR"),
                                                                          choices = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
-                                                                                     "CustomerType", "AssignedRoomType",        
+                                                                                     "DepositType", "CustomerType", "AssignedRoomType",
+                                                                                     "RequiredCarParkingSpaces",        
                                                                                      "MarketSegment", "ADR"))
                                      ),
                                      conditionalPanel("input.exploreFunc != 'dat'",
                                                       checkboxGroupInput(inputId = "exploreNumSub", label = "Choose Variables to See",
-                                                                         selected = c("LeadTime", "StaysInWeekNights", "ADR"),
-                                                                         choices = c("LeadTime", "StaysInWeekNights", "ADR"))
+                                                                         selected = c("LeadTime", "StaysInWeekNights", "ADR",
+                                                                                      "RequiredCarParkingSpaces"),
+                                                                         choices = c("LeadTime", "StaysInWeekNights", "ADR",
+                                                                                     "RequiredCarParkingSpaces"))
                          ),
                          
                     ),
-                    mainPanel(h1("Graphical Summary"),
+                    mainPanel(h2("Graphical Summary"),
                               plotlyOutput("explorePlot"),
                               br(),
-                              h1("Numerical Summaries"),
+                              h2("Numerical Summaries"),
                               dataTableOutput("exploreSummary"),
-                              h1("Data Set"),
+                              h2("Data Set"),
                               dataTableOutput("exploreData")
                     )          
                 )
@@ -149,20 +149,108 @@ shinyUI(fluidPage(useShinyjs(),
         ),
         tabPanel("PCA", fluid = TRUE,
                  sidebarLayout(
-                     sidebarPanel(sliderInput("year", "Year:", min = 1968, max = 2009, value = 2009, sep='')),
-                     mainPanel( )
+                     sidebarPanel(h2("PCA"),
+                     numericInput(inputId = "pcnum", "Number of PCs to Display", 
+                                  min = 2, max = 4, value = 2)
+                     
+                     ),
+                     mainPanel(h2("Principal Components Analysis"),
+                               tags$p("Principal Components Analysis (PCA) is an unsupervised learning technique used for dimension reduction and
+                                      de-correlating the data. In PCA, we are looking to find linear combinations of the original variables that 
+                                      still retains as much of the total variation as possible. These linear combinations are called principal
+                                      components and are by constuction orthogonal (uncorrelated). We find the principal components using the ",
+                                      a(href = "https://www.cse.iitk.ac.in/users/rmittal/prev_course/s14/notes/lec10.pdf",
+                                        tags$i("Spectral Decomposition,")), " which is just as spooky as it sounds."),
+                               h3("Biplot"),
+                               plotlyOutput("biplot"),
+                               h3("PC Loadings"),
+                               tableOutput("ldgs")
+                               
+                               
+                               
+                     )
                  )
         ),
         tabPanel("Modeling", fluid = TRUE,
                  sidebarLayout(
-                     sidebarPanel(sliderInput("year", "Year:", min = 1968, max = 2009, value = 2009, sep='')),
-                     mainPanel( )
+                     sidebarPanel(h2("Modeling"),
+                                  radioButtons(inputId = "model", label = "Select Model",
+                                              selected = "tree",
+                                              choices = c("Classification Tree" = "tree",
+                                                          "Logistic Regression" = "logit")),
+                                  checkboxGroupInput(inputId = "preds", label = "Choose Predictors",
+                                                     selected = c("LeadTime", "StaysInWeekNights", 
+                                                                  "DepositType", "CustomerType", "AssignedRoomType",
+                                                                  "RequiredCarParkingSpaces",        
+                                                                  "MarketSegment", "ADR"),
+                                                     choices = c("LeadTime", "StaysInWeekNights", 
+                                                                 "DepositType", "CustomerType", "AssignedRoomType",
+                                                                 "RequiredCarParkingSpaces",
+                                                                 "MarketSegment", "ADR")),
+                                  conditionalPanel("input.model == 'tree'",
+                                                   sliderInput("cp", "Value of Cp",
+                                                               min = .01, value = .0565, max = .065, step = .005),
+                                                   checkboxInput("treeupgrade", "Upgrade Tree Plot?")),
+                                  conditionalPanel("input.model =='knn'",
+                                                   sliderInput("kval", "Select k",
+                                                               min = 2, value = 8, max = 15)),
+                                  h3("Prediction Inputs"),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("LeadTime") > -1',
+                                                   numericInput("LeadTimeInput", label = "Lead Time", 
+                                                                value = 0, min = 0, max = 737)),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("StaysInWeekNights") > -1',
+                                                   numericInput("StaysInWeekNightsInput", label = "Weeknight Stays", 
+                                                                value = 0, min = 0, max = 33)),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("DepositType") > -1',
+                                                   selectInput("DepositTypeInput", label = "Deposit Type", 
+                                                               choices = c("No Deposit", "Refundable", "Non Refund"))),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("CustomerType") > -1',
+                                                   selectInput("CustomerTypeInput", label = "Customer Type", 
+                                                               choices = c("Transient", "Contract", "Transient-Party", "Group"))),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("AssignedRoomType") > -1',
+                                                   selectInput("AssignedRoomTypeInput", label = "Assigned Room Type",
+                                                               choices = c("C", "A", "D", "E", "G", "F", "I", "B", "H"))),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("RequiredCarParkingSpaces") > -1',
+                                                   numericInput("RequiredCarParkingSpacesInput", label = "Number of Parking Spaces", 
+                                                                value = 0, min = 0, max = 2)),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("MarketSegment") > -1',
+                                                   selectInput("MarketSegmentInput", label = "Market Segment", 
+                                                               choices = c("Direct", "Corporate", "Online TA",
+                                                                           "Offline TA/TO", "Complementary", "Groups"))),
+                                  conditionalPanel(condition = 'input.preds && input.preds.indexOf("ADR") > -1',
+                                                   numericInput("ADRInput", label = "Average Daily Rate", 
+                                                                value = 0, min = 0, max = 332))
+                    ),
+                     mainPanel(h2("Model Description"),
+                               uiOutput("modeldesc"),
+                               plotOutput("modelplot"),
+                               downloadButton("saveplot", "Save Plot"),
+                               h2("Prediction Output"),
+                               textOutput("pred"))
                  )
         ),
         tabPanel("Data", fluid = TRUE,
                  sidebarLayout(
-                     sidebarPanel(sliderInput("year", "Year:", min = 1968, max = 2009, value = 2009, sep='')),
-                     mainPanel( )
+                     sidebarPanel(h2("Data"),
+                                  sliderInput("rows", label = "Select Row Range", min = 1, 
+                                              max = 5000, value = c(1, 50000)),
+                                  checkboxGroupInput(inputId = "cols", label = "Select Columns",
+                                                     selected = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
+                                                                  "DepositType", "CustomerType", "AssignedRoomType",
+                                                                  "RequiredCarParkingSpaces",        
+                                                                  "MarketSegment", "ADR"),
+                                                     choices = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
+                                                                 "DepositType", "CustomerType", "AssignedRoomType",
+                                                                 "RequiredCarParkingSpaces",
+                                                                 "MarketSegment", "ADR")),
+                                  downloadButton('download', "Download the data")
+                     ),
+                     mainPanel(h2("The Data Set"),
+                               tags$p("This pages exists so that you, the user can look through the data and download it."),
+                               br(),
+                               dataTableOutput("fulldata")
+                               
+                     )
                  )
         )
     )
