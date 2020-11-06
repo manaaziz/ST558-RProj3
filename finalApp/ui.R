@@ -112,10 +112,25 @@ shinyUI(fluidPage(
                          h4("*Numerical summaries automatically generated for selected variable(s)"),
                          br(),
                          h4("Data Set"),
-                         checkboxGroupInput(inputId = "xplrSub", label = "Choose Variables to See",
-                                            choices = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
-                                                        "CustomerType", "AssignedRoomType",        
-                                                        "MarketSegment", "ADR"))
+                         selectInput(inputId = "exploreFunc", label = "What (numeric) summary want to see?",
+                                     selected = "dat",
+                                     choices = c("Means" = "avg", 
+                                                 "Standard Deviations" = "sd", 
+                                                 "Just the data" = "dat")),
+                                     conditionalPanel("input.exploreFunc == 'dat'",
+                                                      checkboxGroupInput(inputId = "xplrSub", label = "Choose Variables to See",
+                                                                         selected = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
+                                                                                      "CustomerType", "AssignedRoomType",        
+                                                                                      "MarketSegment", "ADR"),
+                                                                         choices = c("IsCanceled", "LeadTime", "StaysInWeekNights", 
+                                                                                     "CustomerType", "AssignedRoomType",        
+                                                                                     "MarketSegment", "ADR"))
+                                     ),
+                                     conditionalPanel("input.exploreFunc != 'dat'",
+                                                      checkboxGroupInput(inputId = "exploreNumSub", label = "Choose Variables to See",
+                                                                         selected = c("LeadTime", "StaysInWeekNights", "ADR"),
+                                                                         choices = c("LeadTime", "StaysInWeekNights", "ADR"))
+                         ),
                          
                     ),
                     mainPanel(h1("Graphical Summary"),
@@ -123,7 +138,8 @@ shinyUI(fluidPage(
                               br(),
                               h1("Numerical Summaries"),
                               dataTableOutput("exploreSummary"),
-                              h1("Data Set")
+                              h1("Data Set"),
+                              dataTableOutput("exploreData")
                     )          
                 )
                     

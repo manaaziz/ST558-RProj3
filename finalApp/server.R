@@ -139,6 +139,18 @@ shinyServer(function(input, output, session) {
                 datatable(rownames = FALSE, class = "compact")
         }
     })
+    output$exploreData <- renderDataTable({
+        if(input$exploreFunc == "dat"){
+            hotel[,input$xplrSub] %>% datatable(rownames = FALSE, class = "compact")
+        } else if(input$exploreFunc == "avg"){
+            hotel2 <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights")]
+            colMeans(hotel2[,input$exploreNumSub]) %>% as.matrix() %>%
+                round(4) %>% datatable(class = "compact", colnames = c("Mean"))
+        } else {
+            hotel2 <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights")]
+            apply(hotel2[,input$exploreNumSub], 2, sd) %>% as.matrix() %>%
+                round(4) %>% datatable(class = "compact", colnames = c("Standard Deviation"))
+        }
+    })
 })
 
-summary(hotel$ADR)
