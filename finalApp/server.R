@@ -250,7 +250,8 @@ shinyServer(function(input, output, session) {
             data.frame(matrix(as.numeric(l), attributes(l)$dim,
                               dimnames=attributes(l)$dimnames))
         } else {
-            clstr <- kmeans(hotel.pca[,1:3], input$clustk)
+            hotel.clust <-  hotel[,c("ADR", "LeadTime", "StaysInWeekNights")]
+            clstr <- kmeans(hotel.clust[,1:3], input$clustk)
             clstr$centers
         }
     })
