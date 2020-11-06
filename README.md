@@ -24,7 +24,7 @@ install.packages(pkgs)
 lapply(pkgs, library, character.only = TRUE)
 
 # Run the app from GitHub
-shiny::runGitHub("ST558-RProj3", "manaaziz", ref = "master", subdir = "master/finalApp/")
+shiny::runGitHub("ST558-RProj3", "manaaziz", ref = "main", subdir = "/finalApp/")
 ```
 
 The code for running the app:
