@@ -243,8 +243,8 @@ shinyServer(function(input, output, session) {
     })     
     # Table of model information
     output$ldgs <- renderTable({
+        hotel.pca <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
         if(input$unsup == "pca"){
-            hotel.pca <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
             pca <- princomp(hotel.pca, scores=T, cor=T)
             l <- varimax(pca$loadings[, 1:input$pcnum])$loadings
             data.frame(matrix(as.numeric(l), attributes(l)$dim,
