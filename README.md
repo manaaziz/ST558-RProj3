@@ -13,17 +13,21 @@ Packages required for this app:
   * `rpart`: to fit classification trees
   * `class`: to fit knn models
   
-The code for installing all the packages:
+The code for installing and loading all the packages and running the app:
 ```
+# Install/Load the packages
 pkgs <- c("shiny", "shinyjs", "tidyverse", 
-          "tools", "caret", "plotly", "DT", 
+          "caret", "plotly", "DT", 
           "ggfortify", "MASS", "rpart.plot", 
           "rpart", "class")
 install.packages(pkgs)
-lapply(x, library, character.only = TRUE)
+lapply(pkgs, library, character.only = TRUE)
+
+# Run the app from GitHub
+shiny::runGitHub("ST558-RProj3", "manaaziz", ref = "master", subdir = "master/finalApp/")
 ```
 
 The code for running the app:
 ```
-shiny::runGitHub("ST558-RProj3", "manaaziz", ref = "master", subdir = "master/finalApp/")
+
 ```
