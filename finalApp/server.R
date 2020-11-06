@@ -8,6 +8,7 @@
 #
 
 library(shiny)
+library(shinyjs)
 library(tidyverse)
 library(tools)
 library(caret)
@@ -24,11 +25,20 @@ hotel$IsCanceled <- hotel$IsCanceled %>% as.factor()
 shinyServer(function(input, output, session) {
     
     observe({updateSliderInput(session, "bins", max = input$maxBins)})
-
+    
+    observeEvent(input$posty, {
+        toggle('funtext')
+        output$postText <- renderUI({
+            HTML(paste("Thanks for the McFLEURY :)","#GoKnightsGo", 
+                       "Click the button again,", "I disappear!", 
+                       sep = "<br/>"))
+                 })
+    })
+    
     output$explorePlot <- renderPlotly({
         if(input$plottype == "hist"){
             # Create histogram
-            if(input$histvar == "adr"){
+            if(input$histvar == "adr"){z
                 plot_ly(x = ~hotel$ADR,  type = "histogram", nbinsx = input$bins) %>%
                     layout(xaxis = list(title = list(text='<b> Average Daily Room Rate </b>')),
                            yaxis = list(title = list(text='<b> Frequency </b>')))

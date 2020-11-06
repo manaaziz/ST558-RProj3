@@ -9,6 +9,7 @@
 
 # Load necessary libraries
 library(shiny)
+library(shinyjs)
 library(tidyverse)
 library(tools)
 library(caret)
@@ -22,7 +23,7 @@ hotel <- hotel[1:5000, covs]
 hotel$IsCanceled <- hotel$IsCanceled %>% as.factor()
 
 # Define UI for application that draws a histogram
-shinyUI(fluidPage(
+shinyUI(fluidPage(useShinyjs(),
     tabsetPanel(
         tabPanel("Information", fluid = TRUE,
                  sidebarLayout(
@@ -37,7 +38,9 @@ shinyUI(fluidPage(
                                  tags$li(a(href = "https://manaaziz.github.io", "BLOG")),
                                  tags$li(a(href = "https://www.linkedin.com/in/manaazizsoltani/", "LINKEDIN"))
                              )
-                         )
+                         ),
+                         actionButton(inputId = "posty", label = "PRESS HERE"),
+                         hidden(div(id='funtext', htmlOutput("postText")))
                      ),
                      mainPanel(
                          h1("Welcome to my app!"),
