@@ -241,17 +241,19 @@ shinyServer(function(input, output, session) {
                     add_markers(size = 1.5)
         }
     })     
+    hotel.pca <- reactive({
+        hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
+    })
     # Table of model information
     output$ldgs <- renderTable({
-        hotel.pca <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
+        
         if(input$unsup == "pca"){
-            pca <- princomp(hotel.pca, scores=T, cor=T)
+            pca <- princomp(hotel.pca(), scores=T, cor=T)
             l <- varimax(pca$loadings[, 1:input$pcnum])$loadings
             data.frame(matrix(as.numeric(l), attributes(l)$dim,
                               dimnames=attributes(l)$dimnames))
         } else {
-            hotel.clust <-  hotel[,c("ADR", "LeadTime", "StaysInWeekNights")]
-            clstr <- kmeans(hotel.clust[,1:3], input$clustk)
+            clstr <- kmeans(hotel.pca()[,1:3], input$clustk)
             clstr$centers
         }
     })

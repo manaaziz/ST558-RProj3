@@ -246,7 +246,7 @@ shinyUI(fluidPage(useShinyjs(), withMathJax(),
                                   downloadButton('download', "Download the data")
                      ),
                      mainPanel(h2("The Data Set"),
-                               tags$p("This pages exists so that you, the user can look through the data and download it."),
+                               tags$p("This pages exists so that you, the user, can look through the data and download it."),
                                br(),
                                dataTableOutput("fulldata")
                                
