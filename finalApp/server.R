@@ -17,6 +17,8 @@ hotel <- read_csv("../H1.csv")
 covs <- names(hotel)[c(1,2,8,26,20,28,22,14,27)]
 hotel <- hotel[1:5000, covs] %>% dplyr::filter(AssignedRoomType != "P")
 hotel$IsCanceled <- hotel$IsCanceled %>% as.factor()
+
+# Define train control for knn model
 trctrl <- trainControl(method = "cv", number = 5)
 
 # Define server logic required to draw a histogram
@@ -26,6 +28,7 @@ shinyServer(function(input, output, session) {
     # Reactive Stuff
     observe({updateSliderInput(session, "bins", max = input$maxBins)})
     
+    # Dr. Post's Button
     observeEvent(input$posty, {
         toggle('funtext')
         output$postText <- renderUI({
@@ -166,56 +169,94 @@ shinyServer(function(input, output, session) {
 
     })
     
-# PRINCIPAL COMPONENTS
-    # Biplot
-    output$biplot <- renderPlotly({
-        hotel.pca <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
-        pca <- princomp(hotel.pca, scores=T, cor=T)
-        
-        # Scores
-        scores <- pca$scores
-        x <- scores[,1]
-        y <- scores[,2]
-        z <- scores[,3]
-        
-        # Loadings
-        loads <- pca$loadings
-        
-        # Scale factor for loadings
-        scale.loads <- 5
-        
-        # 3D plot
-        library(plotly)
-        p <- plot_ly() %>%
-            add_trace(x=x, y=y, z=z,
-                      type="scatter3d", mode="markers",
-                      marker = list(color=y, 
-                                    colorscale = c("#FFE1A1", "#683531"), 
-                                    opacity = 0.7)) 
-        
-        for (k in 1:input$pcnum) {
-            x <- c(0, loads[k,1])*scale.loads
-            y <- c(0, loads[k,2])*scale.loads
-            z <- c(0, loads[k,3])*scale.loads
-            p <- p %>% add_trace(x=x, y=y, z=z,
-                                 name = paste("PC", k),
-                                 type="scatter3d", mode="lines",
-                                 line = list(width=8),
-                                 opacity = 1) 
+# UNSUPERVISED LEARNING
+    # Title for unsupervised learning page
+    output$unsuptitle <- renderUI({
+        if(input$unsup == "pca"){
+            HTML("<h2> Principal Components Analysis </h2>")
+        } else {
+            HTML("<h2> Cluster Analysis </h2>")
         }
-        print(p)
-        
-    })     
-    # Loadings Table
-    output$ldgs <- renderTable({
+    })
+    # Description for the unsupervised method
+    output$unsupdesc <- renderUI({
+        if(input$unsup == "pca"){
+            HTML("<p>Principal Components Analysis (PCA) is an unsupervised learning technique used for dimension reduction and
+                 de-correlating the data. In PCA, we are looking to find linear combinations of the original variables that 
+                 still retains as much of the total variation as possible. These linear combinations are called principal
+                 components and are by constuction orthogonal (uncorrelated). We find the principal components using the 
+                                      <a href='https://www.cse.iitk.ac.in/users/rmittal/prev_course/s14/notes/lec10.pdf'>
+                                        <i>Spectral Decomposition,</i> </a> which is just as spooky as it sounds.</p>")
+        } else {
+            HTML("<p>Cluster Analysis is an unsupervised learning technique used for dimension reduction. Clustering tried to
+                 find subgroups in the data. These groups in theory have membbers that are 'similar' to one another. For this 
+                 project I will be using K-means clustering. </p>")
+        }
+    })
+    # Visualization
+    output$unsupplot <- renderPlotly({
+        # Subset data for the plot
         hotel.pca <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
-        pca <- princomp(hotel.pca, scores=T, cor=T)
-        l <- varimax(pca$loadings[, 1:input$pcnum])$loadings
-        data.frame(matrix(as.numeric(l), attributes(l)$dim,
-                          dimnames=attributes(l)$dimnames))
+        if(input$unsup == "pca"){
+            # Fit PCA
+            pca <- princomp(hotel.pca, scores=T, cor=T)
+        
+            # Scores
+            scores <- pca$scores
+            x <- scores[,1]
+            y <- scores[,2]
+            z <- scores[,3]
+        
+            # Loadings
+            loads <- pca$loadings
+        
+            # Scale factor for loadings
+            scale.loads <- 5
+        
+            # 3D plot
+            p <- plot_ly() %>%
+                 add_trace(x=x, y=y, z=z,
+                           type="scatter3d", mode="markers",
+                           marker = list(color=y, 
+                                         colorscale = c("#FFE1A1", "#683531"), 
+                                         opacity = 0.7)) 
+            # Add the different traces
+            for (k in 1:input$pcnum) {
+                x <- c(0, loads[k,1])*scale.loads
+                y <- c(0, loads[k,2])*scale.loads
+                z <- c(0, loads[k,3])*scale.loads
+                p <- p %>% add_trace(x=x, y=y, z=z,
+                                     name = paste("PC", k),
+                                     type="scatter3d", mode="lines",
+                                     line = list(width=8),
+                                     opacity = 1) 
+            }
+            print(p)
+        } else {
+            # 3D Cluster PLot
+            df <- hotel.pca[,1:3]
+            df$cluster <- factor(kmeans(df, input$clustk)$cluster)
+            
+            plot_ly(df, x =~ ADR, y =~ LeadTime, 
+                    z =~ StaysInWeekNights, color =~ cluster) %>%
+                    add_markers(size = 1.5)
+        }
+    })     
+    # Table of model information
+    output$ldgs <- renderTable({
+        if(input$unsup == "pca"){
+            hotel.pca <- hotel[,c("ADR", "LeadTime", "StaysInWeekNights", "RequiredCarParkingSpaces")]
+            pca <- princomp(hotel.pca, scores=T, cor=T)
+            l <- varimax(pca$loadings[, 1:input$pcnum])$loadings
+            data.frame(matrix(as.numeric(l), attributes(l)$dim,
+                              dimnames=attributes(l)$dimnames))
+        } else {
+            clstr <- kmeans(hotel.pca[,1:3], input$clustk)
+            clstr$centers
+        }
     })
 # MODELING
-    # Reactive Stuff
+    # Fit models reactively
     form <- reactive({
         paste("IsCanceled", "~", paste(input$preds, collapse = "+")) %>% as.formula()
     })
@@ -253,7 +294,7 @@ shinyServer(function(input, output, session) {
             )
         }
     })
-    
+    # Create plots reactively for saving
     tree.base <- reactive({
         plot(treefit(), main = "Tree Visualization")
         text(treefit())
@@ -291,10 +332,10 @@ shinyServer(function(input, output, session) {
                  ylab = "Residuals")
         }
     })
+    # Save button for plots
     output$saveplot <- downloadHandler(
-        file = "plot.png", # variable with filename
+        file = "plot.png",
         content = function(file){
-            #ggsave(p(), filename = file)
             png(file = file)
             pp.out()
             dev.off()
@@ -320,8 +361,9 @@ shinyServer(function(input, output, session) {
         paste0("The prediction for the set of inputs is: ", pr[2])
     })
 # DATA SET
+    # Set rows and columns reactively
     data.out <- reactive({
-        hotel[input$rows[1]:input$rows[2], input$cols]# %>% datatable(class = "compact", rownames = FALSE)
+        hotel[input$rows[1]:input$rows[2], input$cols]
     })
     output$fulldata <- renderDataTable({
         data.out()
@@ -332,4 +374,3 @@ shinyServer(function(input, output, session) {
             write.csv(data.out(), fname)
         })
 })
-

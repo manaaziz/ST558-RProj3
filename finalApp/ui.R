@@ -61,8 +61,8 @@ shinyUI(fluidPage(useShinyjs(), withMathJax(),
                             tags$p("This app has a few different tabs that the user can click to navigate to:"),
                             tags$ul(
                                 tags$li("Exploration: the user can create common numerical and graphical summaries"),
-                                tags$li("PCA: the user can specify aspects of a principal components analysis and see a
-                                        biplot"),
+                                tags$li("Unsupervised: the user can specify aspects of a principal components analysis or cluster analysis
+                                        and see visualizations."),
                                 tags$li("Modeling: the user can specify various aspects of two different supervised learning 
                                         models as well as get predictions"),
                                 tags$li("Data: the user can scroll through the data, subset it, and save the data as
@@ -147,23 +147,24 @@ shinyUI(fluidPage(useShinyjs(), withMathJax(),
                 )
                     
         ),
-        tabPanel("PCA", fluid = TRUE,
+        tabPanel("Unsupervised", fluid = TRUE,
                  sidebarLayout(
-                     sidebarPanel(h2("PCA"),
-                     numericInput(inputId = "pcnum", "Number of PCs to Display", 
-                                  min = 2, max = 4, value = 2)
+                     sidebarPanel(radioButtons("unsup", "Unsupervised Method", 
+                                               choiceNames = c("PCA", "Cluster"),
+                                               choiceValues = c("pca", "clust")),
+                                  conditionalPanel("input.unsup == 'pca'",
+                                                   numericInput(inputId = "pcnum", "Number of PCs to Display", 
+                                                                min = 2, max = 4, value = 2)),
+                                  conditionalPanel("input.unsup == 'clust'",
+                                                   numericInput(inputId = "clustk", "Choose k",
+                                                                min = 3, max = 6, value = 3))
                      
                      ),
-                     mainPanel(h2("Principal Components Analysis"),
-                               tags$p("Principal Components Analysis (PCA) is an unsupervised learning technique used for dimension reduction and
-                                      de-correlating the data. In PCA, we are looking to find linear combinations of the original variables that 
-                                      still retains as much of the total variation as possible. These linear combinations are called principal
-                                      components and are by constuction orthogonal (uncorrelated). We find the principal components using the ",
-                                      a(href = "https://www.cse.iitk.ac.in/users/rmittal/prev_course/s14/notes/lec10.pdf",
-                                        tags$i("Spectral Decomposition,")), " which is just as spooky as it sounds."),
-                               h3("Biplot"),
-                               plotlyOutput("biplot"),
-                               h3("PC Loadings"),
+                     mainPanel(uiOutput("unsuptitle"),
+                               uiOutput("unsupdesc"),
+                               h3("Visualization"),
+                               plotlyOutput("unsupplot"),
+                               h3("Analysis Output"),
                                tableOutput("ldgs")
                                
                                
