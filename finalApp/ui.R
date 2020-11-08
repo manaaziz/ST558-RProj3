@@ -156,7 +156,7 @@ shinyUI(fluidPage(useShinyjs(), withMathJax(),
                                                                 min = 2, max = 4, value = 2)),
                                   conditionalPanel("input.unsup == 'clust'",
                                                    numericInput(inputId = "clustk", "Choose k",
-                                                                min = 3, max = 6, value = 3))
+                                                                min = 3, max = 6, value = 3, step = 1))
                      
                      ),
                      mainPanel(uiOutput("unsuptitle"),

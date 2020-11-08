@@ -238,7 +238,7 @@ shinyServer(function(input, output, session) {
             
             plot_ly(df, x =~ ADR, y =~ LeadTime, 
                     z =~ StaysInWeekNights, color =~ cluster) %>%
-                    add_markers(size = 1.5)
+                    add_markers(size = 2)
         }
     })     
     hotel.pca <- reactive({
